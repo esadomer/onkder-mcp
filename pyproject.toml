@@ -1,0 +1,45 @@
+[project]
+name = "onkder-mcp"
+version = "0.1.0"
+description = "ONKDER/Turkish Journal of Oncology odakli akademik arama ve referansli yanit MCP sunucusu"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "ONKDER MCP Contributors"}]
+keywords = ["mcp", "medical", "oncology", "onkder", "turkish-journal-of-oncology", "academic-search"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Healthcare Industry",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+dependencies = [
+    "beautifulsoup4>=4.13.4",
+    "fastmcp>=2.10.5",
+    "httpx>=0.28.1",
+    "openai>=1.0.0",
+    "pydantic>=2.11.0",
+    "sqlalchemy>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+]
+
+[project.scripts]
+onkder-mcp = "onkder_mcp.server:main"
+
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["onkder_mcp*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
