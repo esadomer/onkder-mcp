@@ -6,7 +6,7 @@ from fastmcp import FastMCP
 
 from .answering import answer_with_optional_llm
 from .client import DatabaseProvider, OnkderClient
-from .models import AnswerResponse, PagedMarkdown, SearchResponse
+from .models import AnswerResponse, ArchiveResponse, IssueArticlesResponse, PagedMarkdown, SearchResponse
 from .parser import detail_to_markdown
 from .utils import paginate
 
@@ -82,14 +82,15 @@ async def list_onkder_archive(year: int | None = None):
     issues = await client.list_archive()
     if year is not None:
         issues = [issue for issue in issues if issue.year == year]
-    return issues
+    return ArchiveResponse(year=year, returned=len(issues), issues=issues)
 
 
 @mcp.tool
 async def list_onkder_issue_articles(content_id: int, limit: int = 50):
     """Arsivdeki bir sayinin content.php id'si ile makale listesini getirir."""
     limit = max(1, min(limit, 100))
-    return await client.list_issue_articles(content_id, limit=limit)
+    results = await client.list_issue_articles(content_id, limit=limit)
+    return IssueArticlesResponse(content_id=content_id, returned=len(results), results=results)
 
 
 @mcp.tool

@@ -38,6 +38,18 @@ class ArchiveIssue(BaseModel):
     url: str
 
 
+class ArchiveResponse(BaseModel):
+    year: int | None = None
+    returned: int
+    issues: list[ArchiveIssue]
+
+
+class IssueArticlesResponse(BaseModel):
+    content_id: int
+    returned: int
+    results: list[ArticleSearchResult]
+
+
 class ArticleSection(BaseModel):
     name: str
     text: str

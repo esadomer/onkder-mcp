@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from collections.abc import Mapping
 from typing import Any, Literal
 
@@ -89,7 +90,9 @@ class OnkderClient:
 
     async def _general_query_search(self, *, query: str, limit: int) -> tuple[int | None, list[ArticleSearchResult]]:
         seen: dict[int, ArticleSearchResult] = {}
+        scores: dict[int, float] = {}
         total_found = 0
+        fetch_limit = max(limit, 25)
         terms = [query]
         tokens = [token for token in query.replace("/", " ").split() if len(token) >= 3]
         if len(tokens) > 1:
@@ -98,15 +101,23 @@ class OnkderClient:
         for term in terms:
             for field in ("title", "keyword", "summary"):
                 search_kwargs = {field: term}
-                total, results = await self._search_form(limit=limit, **search_kwargs)
+                total, results = await self._search_form(limit=fetch_limit, **search_kwargs)
                 if total:
                     total_found += total
-                for result in results:
+                for position, result in enumerate(results):
                     seen.setdefault(result.id, result)
-                    if len(seen) >= limit:
-                        return total_found or None, list(seen.values())
+                    scores[result.id] = max(scores.get(result.id, 0.0), _field_score(field, position))
 
-        return total_found or None, list(seen.values())
+        ranked = sorted(
+            seen.values(),
+            key=lambda result: (
+                scores.get(result.id, 0.0) + _lexical_score(query, result),
+                result.year or 0,
+                result.id,
+            ),
+            reverse=True,
+        )
+        return total_found or None, ranked[:limit]
 
 
 class DatabaseProvider:
@@ -155,3 +166,45 @@ class DatabaseProvider:
             pdf_url=str(row.get("pdf_url") or urls["pdf_url"]),
             source="database",
         )
+
+
+def _field_score(field: str, position: int) -> float:
+    weights = {"title": 3.0, "keyword": 2.0, "summary": 1.0}
+    return weights.get(field, 0.5) + max(0.0, 1.0 - (position * 0.05))
+
+
+def _lexical_score(query: str, result: ArticleSearchResult) -> float:
+    haystack = " ".join([result.title, " ".join(result.authors)]).casefold()
+    haystack_terms = set(_expand_terms(_tokenize(haystack)))
+    tokens = _expand_terms(_tokenize(query))
+    score = 0.0
+    if query.casefold() in haystack:
+        score += 12.0
+    for token in tokens:
+        if token in haystack_terms or token in haystack:
+            score += 5.0
+            if len(token) >= 5:
+                score += 2.0
+    if tokens and all(token in haystack_terms or token in haystack for token in tokens):
+        score += 24.0
+    return score
+
+
+def _tokenize(value: str) -> list[str]:
+    return [token for token in re.findall(r"[a-zA-Z0-9]+", value.casefold()) if len(token) >= 3]
+
+
+def _expand_terms(tokens: list[str]) -> list[str]:
+    equivalents = {
+        "glioma": ["glioma", "gliomas", "glial"],
+        "gliomas": ["glioma", "gliomas", "glial"],
+        "glial": ["glioma", "gliomas", "glial"],
+        "prognosis": ["prognosis", "prognostic"],
+        "prognostic": ["prognosis", "prognostic"],
+        "neoadjuvant": ["neoadjuvant"],
+        "hodgkin": ["hodgkin", "hodgkin's"],
+    }
+    expanded: list[str] = []
+    for token in tokens:
+        expanded.extend(equivalents.get(token, [token]))
+    return list(dict.fromkeys(expanded))
