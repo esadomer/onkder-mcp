@@ -2,7 +2,7 @@
 
 ONKDER Tıbbi MCP, [onkder.org](https://onkder.org/) üzerinde yayımlanan **Turkish Journal of Oncology / Türk Onkoloji Dergisi** makaleleri için akademik arama, makale getirme, Markdown dönüştürme ve kanıta dayalı yanıt üretme araçları sağlayan bir FastMCP sunucusudur.
 
-Yargı MCP yaklaşımına benzer biçimde her veri kaynağı işlemi ayrı MCP tool olarak sunulur: arama, doküman getirme, Markdown sayfalama, arşiv/sayı gezme ve referanslı yanıt üretme.
+her veri kaynağı işlemi ayrı MCP tool olarak sunulur: arama, doküman getirme, Markdown sayfalama, arşiv/sayı gezme ve referanslı yanıt üretme.
 
 ## Özellikler
 
